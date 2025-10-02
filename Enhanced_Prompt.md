@@ -1,5 +1,5 @@
 
-# Core prompt (concise & effective) **(RoadMap)**
+# 01. Core prompt (concise & effective) **(RoadMap)**
 
 Create a comprehensive, logically ordered learning roadmap of **Python topics to learn before working in Natural Language Processing (NLP)**.
 **Audience:** motivated beginner with basic programming familiarity.
@@ -43,7 +43,7 @@ Create a comprehensive, logically ordered learning roadmap of **Python topics to
 ---
 ---
 
-# Core prompt (focused & actionable) **(String)**
+# 02. Core prompt (focused & actionable) **(String)**
 
 Create a **step-by-step tutorial on Python strings for NLP**, using **real NLP-style examples** (tweets, chats, product reviews, multilingual snippets).
 **Audience:** beginner–intermediate Python user headed toward NLP.
@@ -122,7 +122,7 @@ Produce the same content as a **cheat sheet**: two columns per row (*Task* | *Sn
 
 
 
-# Core prompt (focused & actionable) **(Datastructure)**
+# 03. Core prompt (focused & actionable) **(Datastructure)**
 
 Create a **step-by-step tutorial on Python Data Structures for NLP**, using **real NLP-style examples** (tweets, chats, product reviews, multilingual text).
 **Audience:** beginner–intermediate Python user headed toward NLP.
