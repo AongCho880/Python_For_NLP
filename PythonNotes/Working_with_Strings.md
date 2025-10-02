@@ -344,3 +344,208 @@ print(clean_text('pizza-party—2-for-1'))                       # 'pizza-party-
 | `“`       | Left (opening) double quote  |  U+201C | **Ctrl+Shift+u**, type `201c`, press **Enter/Space** | Curly/opening quote. |
 | `”`       | Right (closing) double quote |  U+201D | **Ctrl+Shift+u**, type `201d`, press **Enter/Space** | Curly/closing quote. |
 | `"`       | Straight double quote        |  U+0022 | **Shift + '** (the quote key)                        | Plain/ASCII quote.   |
+
+
+
+---
+
+# Python Text & Regex Cheat Sheet (NLP-friendly)
+
+---
+
+## 1) Preventing mojibake & decoding crashes (Unicode basics)
+
+**Goal:** avoid garbled text like `CafÃ©` and `UnicodeDecodeError`.
+
+**Key ideas**
+
+* `str` is Unicode text; `bytes` is raw data.
+* You **decode** `bytes → str` and **encode** `str → bytes` with the same encoding (use UTF-8 unless you must do otherwise).
+
+**Golden rules**
+
+* Always specify encoding for files: `encoding="utf-8"`.
+* Use `utf-8-sig` for files that may contain a BOM.
+* Pick error strategies deliberately:
+
+  * `errors="strict"` (default) → fail on bad bytes.
+  * `errors="replace"`/`"backslashreplace"` → don’t crash, show placeholders.
+  * `errors="surrogateescape"` → lossless round-trip of unknown bytes.
+
+**Snippets**
+
+```python
+from pathlib import Path
+
+# Read/write safely
+text = Path("in.txt").read_text(encoding="utf-8")
+Path("out.txt").write_text(text, encoding="utf-8")
+
+# BOM-tolerant read
+with open("maybe_bom.txt", encoding="utf-8-sig") as f:
+    data = f.read()
+
+# JSON without mojibake
+import json
+s = json.dumps({"text": "Café 👍"}, ensure_ascii=False)
+Path("data.json").write_text(s, encoding="utf-8")
+```
+
+---
+
+## 2) `re.findall()` vs `re.compile()`
+
+* `re.findall(pattern, text, flags=0)` → **one-off extraction** of **all non-overlapping matches** (list).
+* `re.compile(pattern, flags=0)` → build a **regex object** once; reuse: `.findall()`, `.finditer()`, `.search()`, `.sub()`, etc. (better for loops/pipelines).
+
+```python
+import re
+text = "Order #A12, order #B34, ORDER #C56"
+
+# one-off
+re.findall(r"order\s+#([A-Z]\d+)", text, flags=re.IGNORECASE)
+
+# compile & reuse
+pat = re.compile(r"order\s+#([A-Z]\d+)", re.IGNORECASE)
+pat.findall(text)
+for m in pat.finditer(text):  # memory-friendly
+    print(m.group(1))
+```
+
+**Pitfall:** capturing groups change `findall`’s return type (no group → whole match; 1 group → that group; many groups → tuples). Use `(?:...)` for non-capturing groups.
+
+---
+
+## 3) `\s` vs `\S`
+
+* `\s` = **whitespace** (space, tab, newline, and Unicode spaces).
+* `\S` = **non-whitespace** (the complement of `\s`).
+
+```python
+re.findall(r"\s", "A \tB\nC")     # [' ', '\t', '\n']
+re.findall(r"\S+", "A  B\nC")     # ['A', 'B', 'C']
+```
+
+**Note:** With `re.ASCII`, `\s` limits to ASCII whitespace only.
+
+---
+
+## 4) Why `\S+` in a URL regex?
+
+Pattern: `URL_RE = re.compile(r"https?://\S+")`
+
+* `\S+` = “**one or more non-whitespace chars**” → grab URL until the next space/newline.
+* Simple and Unicode-friendly, but **greedy**: may include trailing punctuation like `,` or `)`.
+
+**Tighter tails (optional)**
+
+```python
+re.compile(r"https?://\S+?(?=[\s\]\)}]|$)")  # stop before space/closing bracket/EOI
+# or exclude common trailing punctuation:
+re.compile(r"https?://[^\s)\],.]+")
+```
+
+---
+
+## 5) `[\w]+` vs `(\w+)`
+
+* `[\w]+` ≡ `\w+` (redundant brackets): **one or more “word” chars**.
+* `(\w+)` = same characters **but captured** as **group 1** (you can reference it, affects `findall` output).
+
+```python
+re.findall(r"\w+", "alpha beta 123")      # ['alpha','beta','123']
+re.findall(r"(\w+)", "alpha beta 123")    # ['alpha','beta','123']  # captured
+re.sub(r"(\w+),\s*(\w+)", r"\2 \1", "Doe, Jane")  # 'Jane Doe'
+```
+
+**When brackets help:** build custom sets, e.g. `[\w.-]+` to allow letters/digits/underscore + dot + dash.
+**When parentheses help:** capture, backreference, or group alternatives (use `(?:...)` for non-capturing).
+
+---
+
+## 6) Detect runs of ≥3 identical chars: `REPEAT3 = re.compile(r'(.)\1{2,}')`
+
+* `(.)` captures **one char**.
+* `\1{2,}` = the **same char** repeats **at least two more times** → total length ≥ 3.
+
+```python
+REPEAT3.search("cooool").group(0)   # 'ooo'
+list(m.group(0) for m in REPEAT3.finditer("heyyyyy youuu"))
+# ['yyyyy', 'uuu']
+```
+
+**Use cases**
+
+* Normalize elongated words:
+
+```python
+re.sub(r'(.)\1{2,}', r'\1\1', "soooo coooool!!!")  # 'sooo cooool!!'
+```
+
+**Notes**
+
+* `.` doesn’t match newline unless `re.DOTALL`.
+* Emojis made of multiple code points may not behave as a single visual unit; restrict to letters if needed (e.g., `([A-Za-z])\1{2,}`).
+
+---
+
+## 7) `re.sub()` — search & replace with regex
+
+**Purpose:** find pattern matches and **replace** them.
+
+```python
+import re
+re.sub(pattern, repl, text, count=0, flags=0)
+
+# Examples
+re.sub(r"[^\w\s]", "", "Hi! #NLP @2025")            # remove punctuation
+re.sub(r"(.)\1{2,}", r"\1\1", "soooo coooool!!!")   # cap repeats
+re.sub(r"\s+", " ", "a \t b\nc").strip()            # normalize spaces
+re.sub(r"(\w+),\s*(\w+)", r"\2 \1", "Doe, Jane")    # use captured groups
+```
+
+**Dynamic replacement**
+
+```python
+def mask_digits(m): return "*" * len(m.group(0))
+re.sub(r"\d+", mask_digits, "Order 123 has 45 items")  # 'Order *** has ** items'
+```
+
+**`re.sub` vs `str.replace`**
+
+* `str.replace` = literal, fast, simple.
+* `re.sub` = pattern-based, supports groups/flags.
+
+---
+
+## Quick “apply it now” recipes
+
+* **Read, clean, and normalize a review**
+
+```python
+import re, unicodedata
+from pathlib import Path
+
+text = Path("review.txt").read_text(encoding="utf-8", errors="strict")
+text = unicodedata.normalize("NFC", text)           # normalize Unicode
+text = re.sub(r"https?://\S+", "", text)            # strip URLs
+text = re.sub(r"(.)\1{2,}", r"\1\1", text)          # limit elongations
+text = re.sub(r"[^\w\s]", " ", text)                # drop punctuation
+text = re.sub(r"\s+", " ", text).strip().casefold() # tidy + robust lowercase
+```
+
+* **Compile once for a pipeline**
+
+```python
+import re
+URL = re.compile(r"https?://\S+")
+REPEAT3 = re.compile(r'(.)\1{2,}')
+NONWORD = re.compile(r"[^\w\s]+")
+
+def clean(s: str) -> str:
+    s = URL.sub("", s)
+    s = REPEAT3.sub(r"\1\1", s)
+    s = NONWORD.sub(" ", s)
+    return re.sub(r"\s+", " ", s).strip().casefold()
+```
+
