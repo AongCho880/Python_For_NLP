@@ -336,3 +336,11 @@ print(len(raw), "->", len(clean_text(raw)))  # quick before/after check
 print(clean_text('Need REFUND!!! visit http://x @me #order'))  # 'refund #order'
 print(clean_text('pizza-party—2-for-1'))                       # 'pizza-party-2-for-1'
 ```
+
+## **Typing Curly Quotes**
+
+| Character | Name                         | Unicode | Quick insert (works anywhere)                        | Notes                |
+| --------- | ---------------------------- | ------: | ---------------------------------------------------- | -------------------- |
+| `“`       | Left (opening) double quote  |  U+201C | **Ctrl+Shift+u**, type `201c`, press **Enter/Space** | Curly/opening quote. |
+| `”`       | Right (closing) double quote |  U+201D | **Ctrl+Shift+u**, type `201d`, press **Enter/Space** | Curly/closing quote. |
+| `"`       | Straight double quote        |  U+0022 | **Shift + '** (the quote key)                        | Plain/ASCII quote.   |
