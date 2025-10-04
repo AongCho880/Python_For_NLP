@@ -239,7 +239,7 @@ Create a **one-page cheat sheet** with two columns (*Task* | *Snippet*) mapping 
 ---
 
 
-# Core prompt (focused & actionable) **(File handling & I/O)**
+# 04. Core prompt (focused & actionable) **(File handling & I/O)**
 
 Create a **step-by-step tutorial on Python File Handling & I/O for NLP**, using **real NLP-style data** (tweets, chats, product reviews, multilingual text, logs).
 **Audience:** beginner–intermediate Python user headed toward NLP.
